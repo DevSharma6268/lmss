@@ -1,5 +1,5 @@
-import { AppWindowIcon, CodeIcon } from "lucide-react";
-import React from "react";
+import { AppWindowIcon, CodeIcon, Loader2 } from "lucide-react";
+import React, { useEffect } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLoginMutation,useRegisterMutation } from "@/features/api/authApi";
+import { toast } from "sonner";
 
 const Login = () => {
   //define staes for signup and login inputs
@@ -26,6 +28,11 @@ const Login = () => {
     password: "",
   });
 
+
+  const [registerUser,{data:registerData,isLoading:registerLoading,isSuccess:registerIsSuccess, error:registerError}]=useRegisterMutation();
+  const [loginUser,{data:loginData,isLoading:loginLoading,isSuccess:loginIsSuccess, error:loginError}]=useLoginMutation();
+  
+
   //function to handle signup input change
   const changeInputHandler = (e, type) => {
     const { name, value } = e.target;
@@ -38,12 +45,40 @@ const Login = () => {
 
 
   //function to handle registration form submission
-  const handleRegistration =(type)=>{
+  const handleRegistration =async (type)=>{
     const inputData = type === "signup" ? signupInput : loginInput;
 
-    console.log(inputData)
+    const action = type === "signup" ? registerUser : loginUser;
+    const result = await action(inputData);
+    
     
   }
+
+
+  useEffect(()=>{
+     if(registerIsSuccess && registerData){
+      toast.success(registerData.message || "User registered successfully")
+     }
+
+      if(loginIsSuccess && loginData){
+        toast.success(loginData.message || "User logged in successfully")
+      }
+
+      if(registerError){
+        toast.error(registerError.data.message || "Something went wrong")
+      }
+
+      if(loginError){
+        toast.error(loginError.data.message || "Something went wrong")
+      }
+  },[
+    registerData,
+    loginData,
+    registerLoading,
+    loginLoading,
+    registerError,
+    loginError
+  ])
 
 
 
@@ -72,7 +107,7 @@ const Login = () => {
                     value={signupInput.name}
                     onChange={(e)=>changeInputHandler(e,"signup")}
                     placeholder="eg. Dev"
-                    required="true"
+                    required={true}
                   />
                 </div>
                 <div className="grid gap-3">
@@ -97,7 +132,17 @@ const Login = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={()=>handleRegistration("signup")} >Signup</Button>
+                <Button disabled={registerLoading} onClick={()=>handleRegistration("signup")} >
+                  {
+                    registerLoading ?
+                    <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                    </>
+                    :
+                    "Signup"
+                  }
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -128,12 +173,22 @@ const Login = () => {
                     value={loginInput.password}
                     onChange={(e)=>changeInputHandler(e,"login")}
                     placeholder="password"
-                    required="true"
+                    required={true}
                   />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={()=>handleRegistration("login")}>login</Button>
+                <Button disabled={loginLoading} onClick={()=>handleRegistration("login")}>
+                  {
+                    loginLoading ?
+                    <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                    </>
+                    :
+                    "Login"
+                  }
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
